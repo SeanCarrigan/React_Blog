@@ -8,6 +8,7 @@ import About from "./About";
 import Missing from "./Missing";
 import { useState, useEffect } from "react";
 import { Route, Routes, useNavigate } from "react-router-dom";
+import { format } from "date-fns";
 
 function App() {
   const [posts, setPosts] = useState([
@@ -38,7 +39,47 @@ function App() {
   ]);
   const [search, setSearch] = useState("");
   const [searchResults, setSearchResults] = useState([]);
+  const [postTitle, setPostTitle] = useState("");
+  const [postBody, setPostBody] = useState("");
+
   const navigate = useNavigate();
+
+  useEffect(() => {
+    const filteredResults = posts.filter(
+      (post) =>
+        (post.body && post.body.toLowerCase().includes(search.toLowerCase())) ||
+        (post.title && post.title.toLowerCase().includes(search.toLowerCase()))
+    );
+
+    setSearchResults(filteredResults.reverse());
+  }, [posts, search]);
+
+  const handleSubmit = (e) => {
+    // preventDefault prevents the browser from performing the default form submission behavior, which involves navigating to a new page or triggering a full-page reload.
+    e.preventDefault();
+
+    console.log("postTitle:", postTitle);
+    console.log("postBody:", postBody);
+
+    const id = posts.length ? posts[posts.length - 1].id + 1 : 1;
+    const datetime = format(new Date(), "MMMM dd, yyyy pp");
+    // create a new post object
+    const newPost = {
+      id,
+      title: postTitle,
+      datetime,
+      body: postBody,
+    };
+    console.log("newPost:", newPost);
+    // create new array with all prev posts and newly created post
+    const allPosts = [...posts, newPost];
+    console.log("allPost:", allPosts);
+    setPosts(allPosts);
+    // after creating a new post, reset postTitle and postBody to "" and navigate back to home screen
+    setPostTitle("");
+    setPostBody("");
+    navigate("/");
+  };
 
   const handleDelete = (id) => {
     const postsList = posts.filter((post) => post.id !== id);
@@ -52,8 +93,20 @@ function App() {
       <Header title="React JS Blog" />
       <Nav search={search} setSearch={setSearch} />
       <Routes>
-        <Route exact path="/" element={<Home posts={posts} />} />
-        <Route exact path="/post" element={<NewPost />} />
+        <Route exact path="/" element={<Home posts={searchResults} />} />
+        <Route
+          exact
+          path="/post"
+          element={
+            <NewPost
+              handleSubmit={handleSubmit}
+              postTitle={postTitle}
+              setPostTitle={setPostTitle}
+              postBody={postBody}
+              setPostBody={setPostBody}
+            />
+          }
+        />
         <Route
           path="/post/:id"
           element={<PostPage posts={posts} handleDelete={handleDelete} />}
